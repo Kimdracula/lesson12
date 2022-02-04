@@ -4,6 +4,9 @@ import java.util.Date;
 
 final class UserNote {
 
+
+    private static int counter;
+
     final String note;
     final Date date;
     final String type;
@@ -12,6 +15,7 @@ final class UserNote {
         this.note = note;
         this.date = date;
         this.type = type;
+        counter++;
     }
 
     public String getNote() {
@@ -24,5 +28,13 @@ final class UserNote {
 
     public String getType() {
         return type;
+    }
+
+    public static int getNumOfInstances() {
+        return counter;
+    }
+
+    public static void setCounter(int counter) {
+        UserNote.counter = counter;
     }
 }
