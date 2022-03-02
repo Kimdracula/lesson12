@@ -1,4 +1,4 @@
-package com.example.sharedpreferences;
+package com.example.realtime;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
