@@ -1,62 +1,81 @@
 package com.example.realtime;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    private SharedPreferences sharedPref = null;
+    public static final String PATH = "notes";
     public static final String KEY = "key";
-    public static final String KEY_COUNTER = "key2";
+    private SharedPreferences sharedPref;
+    DatabaseReference myRef;
+    ArrayList<UserNote> userNotes;
+    NotesAdapter notesAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        sharedPref = getSharedPreferences("My Preferences", MODE_PRIVATE);
+        sharedPref = getPreferences(Context.MODE_PRIVATE);
+        if (sharedPref!=null){
+        UserNote.setCounter(sharedPref.getInt(KEY,0));}
 
-        final ArrayList<UserNote> userNotes = new ArrayList<>();
-
-        final NotesAdapter notesAdapter = new NotesAdapter(userNotes);
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        myRef  = database.getReference(PATH);
+        userNotes = new ArrayList<>();
+        notesAdapter = new NotesAdapter(userNotes);
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setAdapter(notesAdapter);
 
-        int savedCounter = sharedPref.getInt(KEY_COUNTER,0);
-        UserNote.setCounter(savedCounter);
 
-        String savedNotes = sharedPref.getString(KEY, null);
-        if (savedNotes == null || savedNotes.isEmpty()) {
-            Toast.makeText(this, "Empty", Toast.LENGTH_SHORT).show();
-        } else {
-            try {
-                Type type = new TypeToken<ArrayList<UserNote>>() {
-                }.getType();
-                userNotes.addAll(new GsonBuilder().create().fromJson(savedNotes, type));
-                notesAdapter.setNewData(userNotes);
-            } catch (JsonSyntaxException e) {
-                Toast.makeText(this, "Ошибка трансформации", Toast.LENGTH_SHORT).show();
-            }
-        }
 
         findViewById(R.id.fab).setOnClickListener(view -> {
-            userNotes.add(new UserNote("New note "+UserNote.getNumOfInstances(),
-                    new Date(), "New type "+UserNote.getNumOfInstances()));
+UserNote generatedNote = new UserNote("New note "+UserNote.getNumOfInstances(),
+        new Date(), "New type "+UserNote.getNumOfInstances());
+            myRef.push().setValue(generatedNote);
+            userNotes.add(generatedNote);
             notesAdapter.setNewData(userNotes);
-            String jsonNotes = new GsonBuilder().create().toJson(userNotes);
-            sharedPref.edit().putString(KEY, jsonNotes).apply();
-            sharedPref.edit().putInt(KEY_COUNTER,UserNote.getNumOfInstances()).apply();
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        myRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()&& userNotes.size()==0) {
+                    for (DataSnapshot postSnapshot : snapshot.getChildren()) {
+                        UserNote downloadedNote = postSnapshot.getValue(UserNote.class);
+                        userNotes.add(downloadedNote);
+                    }
+                    notesAdapter.setNewData(userNotes); }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(getApplicationContext(),"Ошибка БД",Toast.LENGTH_LONG).show(); }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt(KEY,UserNote.getNumOfInstances()).apply();
     }
 }

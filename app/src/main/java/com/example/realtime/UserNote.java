@@ -2,14 +2,15 @@ package com.example.realtime;
 
 import java.util.Date;
 
-final class UserNote {
+public class UserNote {
 
+     private static int counter;
+     String note;
+     Date date;
+     String type;
 
-    private static int counter;
-
-    final String note;
-    final Date date;
-    final String type;
+    public UserNote() {
+    }
 
     public UserNote(String note, Date date, String type) {
         this.note = note;
@@ -18,16 +19,32 @@ final class UserNote {
         counter++;
     }
 
+    public static int getCounter() {
+        return counter;
+    }
+
     public String getNote() {
         return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     public Date getDate() {
         return date;
     }
 
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
     public String getType() {
         return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public static int getNumOfInstances() {
