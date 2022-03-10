@@ -1,4 +1,4 @@
-package com.example.sharedpreferences;
+package com.example.realtime;
 
 import org.junit.Test;
 
